@@ -8,11 +8,11 @@ const FILES_TO_CACHE = [
   "/favicon.ico"
   ];
   
-  
   const STATIC_CACHE = "static-cache-v1";
   const RUNTIME_CACHE = "runtime-cache";
   
   self.addEventListener("install", event => {
+    console.log("installing service worker")
     event.waitUntil(
       caches
         .open(STATIC_CACHE)
@@ -43,8 +43,18 @@ const FILES_TO_CACHE = [
         .then(() => self.clients.claim())
     );
   });
+
+  self.addEventListener('fetch', e => {
+    console.log('Service Worker: Fetching');
+    e.respondWith(
+        fetch(e.request).catch(() => caches.match(e.request))
+    )
+});
+
+
   
   self.addEventListener("fetch", event => {
+    console.log("making a fetch request")
     // non GET requests are not cached and requests to other origins are not cached
     if (
       event.request.method !== "GET" ||
@@ -64,8 +74,7 @@ const FILES_TO_CACHE = [
               cache.put(event.request, response.clone());
               return response;
             })
-            .catch(() => caches.match(event.request));
-        })
+        }).catch(() => caches.match(event.request))
       );
       return;
     }
@@ -73,6 +82,7 @@ const FILES_TO_CACHE = [
     // use cache first for all other requests for performance
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
+        console.log("responding from cache")
         if (cachedResponse) {
           return cachedResponse;
         }
